@@ -1,9 +1,9 @@
 name: Send Email Notification
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
   schedule:
-    - cron: "0 8 * * *"   # 每天早上 8 点执行一次（你可以自己修改）
+    - cron: "0 8 * * *"   # 每天早上 8 点执行一次
 
 jobs:
   send_email:
