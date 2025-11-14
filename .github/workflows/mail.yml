@@ -3,7 +3,7 @@ name: Send Email Notification
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"  # 每小时运行一次，如果你不想自动运行可以删除这一段 schedule
+    - cron: "0 * * * *"
 
 jobs:
   send_email:
@@ -26,7 +26,7 @@ jobs:
         run: |
           echo "今日热榜更新如下：" > email.txt
           echo "" >> email.txt
-          python3 << 'EOF'
+          python3 - << 'EOF'
 import requests
 from bs4 import BeautifulSoup
 
@@ -34,11 +34,10 @@ url = "https://tophub.today"
 r = requests.get(url, timeout=10)
 soup = BeautifulSoup(r.text, "lxml")
 
-titles = soup.select(".cc-cd-lb-link")
-items = titles[:10]
+titles = soup.select(".cc-cd-lb-link")[:10]
 
 with open("email.txt", "a", encoding="utf-8") as f:
-    for i, t in enumerate(items, 1):
+    for i, t in enumerate(titles, 1):
         text = t.get_text(strip=True)
         link = t.get("href")
         if not link.startswith("http"):
