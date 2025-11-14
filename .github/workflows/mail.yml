@@ -1,0 +1,60 @@
+name: Send Email Notification
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *"  # 每小时运行一次，如果你不想自动运行可以删除这一段 schedule
+
+jobs:
+  send_email:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install requirements
+        run: |
+          pip install requests beautifulsoup4 lxml
+
+      - name: Generate email content
+        run: |
+          echo "今日热榜更新如下：" > email.txt
+          echo "" >> email.txt
+          python3 << 'EOF'
+import requests
+from bs4 import BeautifulSoup
+
+url = "https://tophub.today"
+r = requests.get(url, timeout=10)
+soup = BeautifulSoup(r.text, "lxml")
+
+titles = soup.select(".cc-cd-lb-link")
+items = titles[:10]
+
+with open("email.txt", "a", encoding="utf-8") as f:
+    for i, t in enumerate(items, 1):
+        text = t.get_text(strip=True)
+        link = t.get("href")
+        if not link.startswith("http"):
+            link = "https://tophub.today" + link
+        f.write(f"{i}. {text}\n{link}\n\n")
+EOF
+
+      - name: Send email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.qq.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USER }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "今日热榜新闻推送"
+          to: ${{ secrets.EMAIL_TO }}
+          from: ${{ secrets.EMAIL_USER }}
+          secure: true
+          body_file: email.txt
