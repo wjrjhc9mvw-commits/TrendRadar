@@ -3,7 +3,7 @@ name: Send Email Notification
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "0 8 * * *"   # 每天早上 8 点执行一次（你可以自己修改）
 
 jobs:
   send_email:
@@ -26,34 +26,17 @@ jobs:
         run: |
           echo "今日热榜更新如下：" > email.txt
           echo "" >> email.txt
-          python3 - << 'EOF'
-import requests
-from bs4 import BeautifulSoup
-
-url = "https://tophub.today"
-r = requests.get(url, timeout=10)
-soup = BeautifulSoup(r.text, "lxml")
-
-titles = soup.select(".cc-cd-lb-link")[:10]
-
-with open("email.txt", "a", encoding="utf-8") as f:
-    for i, t in enumerate(titles, 1):
-        text = t.get_text(strip=True)
-        link = t.get("href")
-        if not link.startswith("http"):
-            link = "https://tophub.today" + link
-        f.write(f"{i}. {text}\n{link}\n\n")
-EOF
+          python3 generate.py
 
       - name: Send email
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.qq.com
           server_port: 465
+          secure: true
           username: ${{ secrets.EMAIL_USER }}
           password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "今日热榜新闻推送"
+          subject: "今日热榜自动推送"
           to: ${{ secrets.EMAIL_TO }}
-          from: ${{ secrets.EMAIL_USER }}
-          secure: true
-          body_file: email.txt
+          from: ${{ secrets.EMAIL_FROM }}
+          body: file://email.txt
